@@ -1,0 +1,10 @@
+${AnsiBackground.CYAN}
+
+ _ _|                 ___|                |                |                            |
+   |   __ \   __ \   |       _ \   __ \   __|   __|  _ \   |     _ \  |   |   __|  _ \  |  /   _` |
+   |   |   |  |   |  |      (   |  |   |  |    |    (   |  |     __/  |   |  |     __/    <   (   |
+ ___| _|  _| _|  _| \____| \___/  _|  _| \__| _|   \___/  _|   \___| \__,_| _|   \___| _|\_\ \__,_|
+
+${application.title} ${application.version}
+Powered by Spring Boot ${spring-boot.version}
+${AnsiBackground.DEFAULT}
