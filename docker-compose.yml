@@ -24,12 +24,18 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # SOLO LISTENER INTERNO PARA DOCKER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - automatch-network
 
@@ -41,7 +47,7 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8085:8080"
+      - "8087:8087"
     environment:
       KAFKA_CLUSTERS_0_NAME: "automatch-cluster"
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
@@ -59,7 +65,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data_payments:/var/lib/postgresql/data
     networks:
@@ -90,11 +96,87 @@ services:
       POSTGRES_DB: automatch_messaging
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      SPRING_PROFILES_ACTIVE: docker
     ports:
       - "5434:5432"
     volumes:
       - postgres_data_messaging:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+  # ------------------- PostgreSQL (Interactions) ----------------------------
+  postgres_interactions:
+    image: postgres:16
+    container_name: postgres_interactions
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_interactions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data_interactions:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+    # ------------------- PostgreSQL (Inspections) ----------------------------
+  postgres-inspections:
+    image: postgres:16
+    container_name: postgres-inspections
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_inspections
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_data_inspections:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+  postgres_promos:
+    image: postgres:16
+    container_name: postgres_promos
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_promos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres_data_promos:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+  postgres_iam:
+    image: postgres:16
+    container_name: postgres_iam
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_iam
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_data_iam:/var/lib/postgresql/data
+    networks:
+      - automatch-network
+
+  postgres_vehicle:
+    image: postgres:16
+    container_name: postgres_vehicle
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_vehicle
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5441:5432"
+    volumes:
+      - postgres_data_vehicle:/var/lib/postgresql/data
     networks:
       - automatch-network
 
@@ -114,7 +196,7 @@ services:
     container_name: automatch-payments
     restart: always
     ports:
-      - "8080:8080"
+      - "8093:8093"
     depends_on:
       - postgres_payments
       - kafka
@@ -122,7 +204,6 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     networks:
       - automatch-network
 
@@ -146,10 +227,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
-      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
-      EUREKA_CLIENT_FETCH_REGISTRY: "true"
-      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
     networks:
       - automatch-network
 
@@ -177,6 +254,188 @@ services:
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      SERVICES_NOTIFICATIONS_URL: http://notifications-service:8083
+    networks:
+      - automatch-network
+
+  # ------------------- Interactions Microservice ----------------------------
+  interactions-service:
+    build: ./interactions-service
+    container_name: interactions-service
+    restart: always
+    depends_on:
+      - postgres_interactions
+      - kafka
+      - eureka-server
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: interactions-service
+      SERVER_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_interactions:5432/automatch_interactions
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    networks:
+      - automatch-network
+
+  # ------------------- Inspections Microservice ----------------------------
+  inspections-service:
+    build: ./inspections-service
+    container_name: automatch-inspections
+    restart: always
+    depends_on:
+      - postgres-inspections
+      - kafka
+      - eureka-server
+    ports:
+      - "8090:8090"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: inspections-service
+      SERVER_PORT: 8090
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inspections:5432/automatch_inspections
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_ENABLED: "true"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    networks:
+      - automatch-network
+
+    # ------------------- Promotions & Announcements Microservice ----------------------------
+  promotions-announcement-service:
+    build: ./promotions-announcement-service
+    container_name: automatch-promotions
+    restart: always
+    depends_on:
+      - postgres_promos
+      - kafka
+      - eureka-server
+    ports:
+      - "8091:8091"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: promotions-announcement-service
+      SERVER_PORT: 8091
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_promos:5432/automatch_promos
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AUTOMATCH_TOPIC_CONSUMER: automatch.interaction.created
+      AUTOMATCH_TOPIC_PRODUCER: automatch.promotions.published
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+    networks:
+      - automatch-network
+
+  api-gateway:
+    build: ./ApiGateway-main
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+    networks:
+      - automatch-network
+
+  iam-service:
+    build: ./IAM-service-main
+    container_name: automatch-iam
+    restart: always
+    depends_on:
+      - postgres_iam
+      - eureka-server
+    ports:
+      - "8094:8094"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+
+      SPRING_APPLICATION_NAME: iam-service
+      SERVER_PORT: 8094
+
+      POSTGRES_IAM_HOST: postgres_iam
+      POSTGRES_IAM_PORT: 5432
+      POSTGRES_IAM_DB: automatch_iam
+      POSTGRES_IAM_USERNAME: postgres
+      POSTGRES_IAM_PASSWORD: postgres
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      IAM_JWT_SECRET: iam12345secret
+
+    networks:
+      - automatch-network
+
+  vehicle-service:
+    build: ./Vehicle-Service-main
+    container_name: automatch-vehicle
+    restart: always
+    depends_on:
+      - postgres_vehicle
+      - kafka
+      - eureka-server
+    ports:
+      - "8081:8081"
+    environment:
+      # PERFIL PARA CORRER EN DOCKER
+      SPRING_PROFILES_ACTIVE: docker
+
+      # IDENTIDAD
+      SPRING_APPLICATION_NAME: vehicle-service
+      SERVER_PORT: 8081
+
+      # BASE DE DATOS
+      PG_HOST: postgres_vehicle
+      PG_PORT: 5432
+      PG_DB: automatch_vehicle
+      PG_USER: postgres
+      PG_PASSWORD: postgres
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_vehicle:5432/automatch_vehicle
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+      # KAFKA
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      # EUREKA
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      # JWT (CONFIGURACIÓN INTERNA)
+      AUTHORIZATION_JWT_SECRET: WriteHereYourSecretStringForTokenSigningCredentials
+      AUTHORIZATION_JWT_EXPIRATION_DAYS: 7
+
     networks:
       - automatch-network
 
@@ -185,8 +444,13 @@ volumes:
   postgres_data_payments:
   postgres_data_notifications:
   postgres_data_messaging:
+  postgres_data_interactions:
+  postgres_data_inspections:
+  postgres_data_promos:
+  postgres_data_iam:
+  postgres_data_vehicle:
 
 # ------------------------ Red ------------------------------------
 networks:
   automatch-network:
-    external: true
+    driver: bridge

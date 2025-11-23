@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: payments-service
+          uri: lb://payments
+          predicates:
+            - Path=/api/v1/payments/**
+        - id: inspections-service
+          uri: lb://inspections-service
+          predicates:
+            - Path=/api/v1/inspections/**
+        - id: promotions-announcement-service
+          uri: lb://promotions-announcement-service
+          predicates:
+            - Path=/api/v1/promotions/**
+        - id: interactions-service
+          uri: lb://interactions-service
+          predicates:
+            - Path=/api/v1/interactions/**
+
+      globalcors:
+        corsConfigurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+            allowedHeaders: "*"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.value}
