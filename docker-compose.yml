@@ -362,7 +362,7 @@ services:
       - automatch-network
 
   iam-service:
-    build: ./IAM-service-main
+    build: ./IAM-service
     container_name: automatch-iam
     restart: always
     depends_on:
@@ -392,8 +392,31 @@ services:
     networks:
       - automatch-network
 
+
+  # ------------------- PROFILES SERVICE (8095) -------------------
+  perfiles-service:
+    build: ./Perfiles-Service
+    container_name: perfiles-service
+    restart: always
+    depends_on:
+      - eureka-server
+    ports:
+      - "8095:8095"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: perfiles-service
+      SERVER_PORT: 8095
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+    networks:
+      - automatch-network
+
   vehicle-service:
-    build: ./Vehicle-Service-main
+    build: ./Vehicle-Service
     container_name: automatch-vehicle
     restart: always
     depends_on:
@@ -401,16 +424,13 @@ services:
       - kafka
       - eureka-server
     ports:
-      - "8081:8081"
+      - "8096:8096"
     environment:
-      # PERFIL PARA CORRER EN DOCKER
       SPRING_PROFILES_ACTIVE: docker
 
-      # IDENTIDAD
       SPRING_APPLICATION_NAME: vehicle-service
-      SERVER_PORT: 8081
+      SERVER_PORT: 8096
 
-      # BASE DE DATOS
       PG_HOST: postgres_vehicle
       PG_PORT: 5432
       PG_DB: automatch_vehicle
@@ -423,16 +443,13 @@ services:
 
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
-      # KAFKA
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
-      # EUREKA
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
-      # JWT (CONFIGURACIÓN INTERNA)
       AUTHORIZATION_JWT_SECRET: WriteHereYourSecretStringForTokenSigningCredentials
       AUTHORIZATION_JWT_EXPIRATION_DAYS: 7
 
