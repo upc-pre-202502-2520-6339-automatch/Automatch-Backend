@@ -45,11 +45,13 @@ services:
     container_name: kafka-ui
     restart: always
     depends_on:
+      -
       - kafka
     ports:
       - "8087:8087"
     environment:
       KAFKA_CLUSTERS_0_NAME: "automatch-cluster"
+
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:9092"
       KAFKA_CLUSTERS_0_ZOOKEEPER: "zookeeper:2181"
     networks:
@@ -372,6 +374,7 @@ services:
       - "8094:8094"
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
       SPRING_APPLICATION_NAME: iam-service
       SERVER_PORT: 8094
@@ -382,7 +385,7 @@ services:
       POSTGRES_IAM_USERNAME: postgres
       POSTGRES_IAM_PASSWORD: postgres
 
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
