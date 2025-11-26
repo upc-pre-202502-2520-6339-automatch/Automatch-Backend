@@ -107,6 +107,22 @@ services:
     networks:
       - automatch-network
 
+
+  # ------------------- PostgreSQL (Sales) ----------------------------
+  postgres_sales:
+    image: postgres:16
+    container_name: postgres_sales
+    restart: always
+    environment:
+      POSTGRES_DB: automatch_sales
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5442:5432"
+    volumes:
+      - postgres_data_sales:/var/lib/postgresql/data
+    networks:
+      - automatch-network
   # ------------------- PostgreSQL (Messaging) ----------------------------
   postgres_messaging:
     image: postgres:16
@@ -502,6 +518,38 @@ services:
     networks:
       - automatch-network
 
+  # ------------------- Vehicle Sale SERVICE (8098) -------------------
+  sales-service:
+    build: ./Vehicle-Sales-Service
+    container_name: automatch-sales
+    restart: always
+    depends_on:
+      - postgres_sales
+      - kafka
+      - eureka-server
+    ports:
+      - "8098:8098"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      PG_HOST: postgres_sales
+      PG_PORT: 5432
+      PG_DB: automatch_sales
+      PG_USER: postgres
+      PG_PASSWORD: postgres
+
+      SPRING_APPLICATION_NAME: sales
+      SERVER_PORT: 8098
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
+      AUTHORIZATION_JWT_EXPIRATION_DAYS: 7
+    networks:
+      - automatch-network
 # ---------------------- Volúmenes ------------------------------
 volumes:
   postgres_data_payments:
@@ -512,6 +560,7 @@ volumes:
   postgres_data_promos:
   postgres_data_iam:
   postgres_data_vehicle:
+  postgres_data_sales:
 
 # ------------------------ Red ------------------------------------
 networks:
