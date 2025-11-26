@@ -45,10 +45,10 @@ services:
     container_name: kafka-ui
     restart: always
     depends_on:
-      -
+      - zookeeper
       - kafka
     ports:
-      - "8087:8087"
+      - "8087:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: "automatch-cluster"
 
@@ -56,6 +56,24 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: "zookeeper:2181"
     networks:
       - automatch-network
+
+  # ------------------- MYSQL (Profile) ----------------------------
+
+  mysql_profiles:
+    image: mysql:8
+    container_name: mysql_profiles
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: automach_perfiles
+    ports:
+      - "3307:3306"
+    networks:
+      - automatch-network
+
+
+
+
 
   # ------------------- PostgreSQL (Payments) ----------------------------
   postgres_payments:
@@ -121,7 +139,7 @@ services:
     networks:
       - automatch-network
 
-    # ------------------- PostgreSQL (Inspections) ----------------------------
+  # ------------------- PostgreSQL (Inspections) ----------------------------
   postgres-inspections:
     image: postgres:16
     container_name: postgres-inspections
@@ -370,6 +388,7 @@ services:
     depends_on:
       - postgres_iam
       - eureka-server
+      - kafka
     ports:
       - "8094:8094"
     environment:
@@ -390,7 +409,7 @@ services:
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
-      IAM_JWT_SECRET: iam12345secret
+      IAM_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
 
     networks:
       - automatch-network
@@ -403,6 +422,8 @@ services:
     restart: always
     depends_on:
       - eureka-server
+      - kafka
+      - mysql_profiles
     ports:
       - "8095:8095"
     environment:
@@ -410,13 +431,31 @@ services:
       SPRING_APPLICATION_NAME: perfiles-service
       SERVER_PORT: 8095
 
+      # Eureka
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
+      # Kafka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      # Activar consumo de eventos
+      AUTOMATCH_EVENTS_ENABLED: "true"
+
+      # DB Profiles (muy importante)
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql_profiles:3306/automach_perfiles?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password
+
+      # JWT mismo secret que IAM
+      AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
+
     networks:
       - automatch-network
+
+
+
 
   vehicle-service:
     build: ./Vehicle-Service
@@ -453,7 +492,7 @@ services:
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
-      AUTHORIZATION_JWT_SECRET: WriteHereYourSecretStringForTokenSigningCredentials
+      AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
       AUTHORIZATION_JWT_EXPIRATION_DAYS: 7
 
     networks:
