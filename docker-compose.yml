@@ -456,7 +456,7 @@ services:
 
 
 
-
+  # ------------------- Vehicle SERVICE (8096) -------------------
   vehicle-service:
     build: ./Vehicle-Service
     container_name: automatch-vehicle
@@ -487,6 +487,8 @@ services:
 
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
 
+      AUTOMATCH_EVENTS_ENABLED: "true"
+
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
       EUREKA_CLIENT_FETCH_REGISTRY: "true"
@@ -495,6 +497,8 @@ services:
       AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
       AUTHORIZATION_JWT_EXPIRATION_DAYS: 7
 
+      AUTOMATCH_TOPICS_VEHICLES_CREATED: automatch.vehicles.created
+      AUTOMATCH_TOPICS_VEHICLES_UPDATED: automatch.vehicles.updated
     networks:
       - automatch-network
 
