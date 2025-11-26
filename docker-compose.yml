@@ -520,7 +520,7 @@ services:
 
   # ------------------- Vehicle Sale SERVICE (8098) -------------------
   sales-service:
-    build: ./Vehicle-Sales-Service
+    build: ./Ventas-Vehiculo-Servicio
     container_name: automatch-sales
     restart: always
     depends_on:
