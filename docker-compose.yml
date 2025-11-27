@@ -226,7 +226,7 @@ services:
     networks:
       - automatch-network
 
-  #----------------- Payments Microservice -------------------------
+    #----------------- Payments Microservice -------------------------
   payments:
     build: ./payments
     container_name: automatch-payments
@@ -239,10 +239,31 @@ services:
       - eureka-server
     environment:
       SPRING_PROFILES_ACTIVE: docker
+
+      # Nombre y puerto del servicio
+      SPRING_APPLICATION_NAME: automatch-payments
+      SERVER_PORT: 8093
+
+      # === DATABASE (PostgreSQL) ===
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_payments:5432/automatch_payments
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      # === Kafka ===
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      # === Eureka ===
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "true"
+      EUREKA_CLIENT_FETCH_REGISTRY: "true"
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      # === JWT ===
       AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
     networks:
       - automatch-network
+
+
 
   #----------------- Notifications Microservice -------------------------
   notifications-service:
@@ -264,6 +285,14 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      # ===== TWILIO REAL / MOCK =====
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      NOTIFICATIONS_TWILIO_ENABLED: "true"
+
+
     networks:
       - automatch-network
 
