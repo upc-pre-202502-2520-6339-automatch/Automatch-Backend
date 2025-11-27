@@ -240,6 +240,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AUTHORIZATION_JWT_SECRET: SuperMegaUltraUltraSecretKey_For_AutoMatch_2025_HS384_xxYYzz
     networks:
       - automatch-network
 
